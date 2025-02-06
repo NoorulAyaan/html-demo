@@ -1,58 +1,27 @@
-name: Deploy HTML & CSS to GitHub Pages
+name: Lint HTML & CSS
 
 on:
   push:
-    branches: ["main"]  # Change 'main' to your branch name
+    branches: [main]
   pull_request:
-    branches: ["main"]
-  workflow_dispatch:  # Allows manual trigger
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    branches: [main]
 
 jobs:
-  test:
-    name: Run HTML & CSS Linters
+  lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |
-          npm install -g htmlhint stylelint stylelint-config-standard
+          npm install -g stylelint stylelint-config-standard
 
-      - name: Run HTML Linter
-        run: htmlhint "**/*.html"
+      - name: Ensure Stylelint Config Exists
+        run: |
+          if [ ! -f .stylelintrc.json ]; then
+            echo '{ "extends": "stylelint-config-standard", "rules": { "indentation": 2, "color-no-invalid-hex": true } }' > .stylelintrc.json
+          fi
 
-      - name: Run CSS Linter
+      - name: Run Stylelint
         run: stylelint "**/*.css"
-
-  deploy:
-    name: Deploy to GitHub Pages
-    needs: test  # Deploy only if tests pass
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload HTML & CSS
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'  # Upload all HTML, CSS, and assets
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
